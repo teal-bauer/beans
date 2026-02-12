@@ -1,7 +1,7 @@
 ---
 # beans-p17z
 title: beans next command
-status: todo
+status: completed
 type: task
 priority: normal
 created_at: 2025-12-27T21:44:04Z
