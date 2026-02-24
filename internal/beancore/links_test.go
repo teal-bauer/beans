@@ -616,7 +616,35 @@ func TestFindActiveBlockers(t *testing.T) {
 	})
 }
 
-func TestIsBlockedInheritsFromParent(t *testing.T) {
+func TestIsTransitivelyBlocked(t *testing.T) {
+	t.Run("directly blocked bean", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		blocker := &bean.Bean{
+			ID:       "blocker",
+			Title:    "Blocker",
+			Status:   "todo",
+			Type:     "task",
+			Blocking: []string{"target"},
+		}
+		target := &bean.Bean{
+			ID:     "target",
+			Title:  "Target",
+			Status: "todo",
+			Type:   "task",
+		}
+
+		for _, b := range []*bean.Bean{blocker, target} {
+			if err := core.Create(b); err != nil {
+				t.Fatalf("Create error: %v", err)
+			}
+		}
+
+		if !core.IsTransitivelyBlocked("target") {
+			t.Error("target should be transitively blocked (directly blocked)")
+		}
+	})
+
 	t.Run("child of blocked parent", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 
@@ -647,33 +675,33 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 			}
 		}
 
-		if !core.IsBlocked("feature-x") {
-			t.Error("feature-x should be blocked (parent epic-b is blocked by epic-a)")
-		}
-		blockers := core.FindActiveBlockers("feature-x")
-		if len(blockers) != 1 {
-			t.Fatalf("expected 1 blocker, got %d", len(blockers))
-		}
-		if blockers[0].ID != "epic-a" {
-			t.Errorf("expected blocker epic-a, got %s", blockers[0].ID)
+		if !core.IsTransitivelyBlocked("feature-x") {
+			t.Error("feature-x should be transitively blocked (parent epic-b is blocked by epic-a)")
 		}
 	})
 
 	t.Run("grandchild of blocked grandparent", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 
-		milestone := &bean.Bean{
-			ID:       "milestone-1",
-			Title:    "Milestone",
+		blocker := &bean.Bean{
+			ID:       "blocker",
+			Title:    "Blocker",
 			Status:   "todo",
 			Type:     "milestone",
-			Blocking: []string{"epic-1"},
+			Blocking: []string{"milestone-1"},
+		}
+		milestone := &bean.Bean{
+			ID:     "milestone-1",
+			Title:  "Milestone",
+			Status: "todo",
+			Type:   "milestone",
 		}
 		epic := &bean.Bean{
 			ID:     "epic-1",
 			Title:  "Epic",
 			Status: "todo",
 			Type:   "epic",
+			Parent: "milestone-1",
 		}
 		task := &bean.Bean{
 			ID:     "task-1",
@@ -683,25 +711,18 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 			Parent: "epic-1",
 		}
 
-		for _, b := range []*bean.Bean{milestone, epic, task} {
+		for _, b := range []*bean.Bean{blocker, milestone, epic, task} {
 			if err := core.Create(b); err != nil {
 				t.Fatalf("Create error: %v", err)
 			}
 		}
 
-		if !core.IsBlocked("task-1") {
-			t.Error("task-1 should be blocked (parent epic-1 is blocked by milestone-1)")
-		}
-		blockers := core.FindActiveBlockers("task-1")
-		if len(blockers) != 1 {
-			t.Fatalf("expected 1 blocker, got %d", len(blockers))
-		}
-		if blockers[0].ID != "milestone-1" {
-			t.Errorf("expected blocker milestone-1, got %s", blockers[0].ID)
+		if !core.IsTransitivelyBlocked("task-1") {
+			t.Error("task-1 should be transitively blocked (grandparent milestone-1 is blocked)")
 		}
 	})
 
-	t.Run("child of unblocked parent", func(t *testing.T) {
+	t.Run("unblocked child of unblocked parent", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 
 		epicC := &bean.Bean{
@@ -724,8 +745,8 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 			}
 		}
 
-		if core.IsBlocked("feature-y") {
-			t.Error("feature-y should not be blocked (parent epic-c has no blockers)")
+		if core.IsTransitivelyBlocked("feature-y") {
+			t.Error("feature-y should not be transitively blocked (parent epic-c has no blockers)")
 		}
 	})
 
@@ -759,12 +780,54 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 			}
 		}
 
-		if core.IsBlocked("feature-x") {
-			t.Error("feature-x should not be blocked (epic-a is completed)")
+		if core.IsTransitivelyBlocked("feature-x") {
+			t.Error("feature-x should not be transitively blocked (epic-a is completed)")
 		}
 	})
 
-	t.Run("child has own blocker too", func(t *testing.T) {
+	t.Run("direct IsBlocked unchanged for child of blocked parent", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		epicA := &bean.Bean{
+			ID:       "epic-a",
+			Title:    "Epic A",
+			Status:   "todo",
+			Type:     "epic",
+			Blocking: []string{"epic-b"},
+		}
+		epicB := &bean.Bean{
+			ID:     "epic-b",
+			Title:  "Epic B",
+			Status: "todo",
+			Type:   "epic",
+		}
+		featureX := &bean.Bean{
+			ID:     "feature-x",
+			Title:  "Feature X",
+			Status: "todo",
+			Type:   "feature",
+			Parent: "epic-b",
+		}
+
+		for _, b := range []*bean.Bean{epicA, epicB, featureX} {
+			if err := core.Create(b); err != nil {
+				t.Fatalf("Create error: %v", err)
+			}
+		}
+
+		// IsBlocked should be false for the child (direct-only)
+		if core.IsBlocked("feature-x") {
+			t.Error("IsBlocked should return false for child of blocked parent (direct-only check)")
+		}
+		// But IsTransitivelyBlocked should be true
+		if !core.IsTransitivelyBlocked("feature-x") {
+			t.Error("IsTransitivelyBlocked should return true for child of blocked parent")
+		}
+	})
+}
+
+func TestFindTransitiveBlockers(t *testing.T) {
+	t.Run("returns both direct and ancestor blockers", func(t *testing.T) {
 		core, _ := setupTestCore(t)
 
 		epicA := &bean.Bean{
@@ -801,7 +864,7 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 			}
 		}
 
-		blockers := core.FindActiveBlockers("feature-x")
+		blockers := core.FindTransitiveBlockers("feature-x")
 		if len(blockers) != 2 {
 			t.Fatalf("expected 2 blockers, got %d", len(blockers))
 		}
@@ -814,6 +877,62 @@ func TestIsBlockedInheritsFromParent(t *testing.T) {
 		}
 		if !ids["direct-blocker"] {
 			t.Error("expected direct-blocker in blockers (direct)")
+		}
+	})
+
+	t.Run("FindActiveBlockers only returns direct blockers", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		epicA := &bean.Bean{
+			ID:       "epic-a",
+			Title:    "Epic A",
+			Status:   "todo",
+			Type:     "epic",
+			Blocking: []string{"epic-b"},
+		}
+		epicB := &bean.Bean{
+			ID:     "epic-b",
+			Title:  "Epic B",
+			Status: "todo",
+			Type:   "epic",
+		}
+		directBlocker := &bean.Bean{
+			ID:       "direct-blocker",
+			Title:    "Direct Blocker",
+			Status:   "todo",
+			Type:     "task",
+			Blocking: []string{"feature-x"},
+		}
+		featureX := &bean.Bean{
+			ID:     "feature-x",
+			Title:  "Feature X",
+			Status: "todo",
+			Type:   "feature",
+			Parent: "epic-b",
+		}
+
+		for _, b := range []*bean.Bean{epicA, epicB, directBlocker, featureX} {
+			if err := core.Create(b); err != nil {
+				t.Fatalf("Create error: %v", err)
+			}
+		}
+
+		// FindActiveBlockers should only return the direct blocker
+		blockers := core.FindActiveBlockers("feature-x")
+		if len(blockers) != 1 {
+			t.Fatalf("expected 1 direct blocker, got %d", len(blockers))
+		}
+		if blockers[0].ID != "direct-blocker" {
+			t.Errorf("expected direct-blocker, got %s", blockers[0].ID)
+		}
+	})
+
+	t.Run("returns nil for nonexistent bean", func(t *testing.T) {
+		core, _ := setupTestCore(t)
+
+		blockers := core.FindTransitiveBlockers("nonexistent")
+		if blockers != nil {
+			t.Errorf("FindTransitiveBlockers() returned %v, want nil", blockers)
 		}
 	})
 }
