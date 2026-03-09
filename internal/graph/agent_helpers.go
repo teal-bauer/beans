@@ -41,13 +41,32 @@ func agentSessionToModel(s *agent.Session) *model.AgentSession {
 		errPtr = &s.Error
 	}
 
+	var pending *model.PendingInteraction
+	if s.PendingInteraction != nil {
+		var itype model.InteractionType
+		switch s.PendingInteraction.Type {
+		case agent.InteractionExitPlan:
+			itype = model.InteractionTypeExitPlan
+		case agent.InteractionEnterPlan:
+			itype = model.InteractionTypeEnterPlan
+		case agent.InteractionAskUser:
+			itype = model.InteractionTypeAskUser
+		}
+		var planContent *string
+		if s.PendingInteraction.PlanContent != "" {
+			planContent = &s.PendingInteraction.PlanContent
+		}
+		pending = &model.PendingInteraction{Type: itype, PlanContent: planContent}
+	}
+
 	return &model.AgentSession{
-		BeanID:    s.ID,
-		AgentType: s.AgentType,
-		Status:    status,
-		Messages:  msgs,
-		Error:     errPtr,
-		PlanMode:  s.PlanMode,
+		BeanID:             s.ID,
+		AgentType:          s.AgentType,
+		Status:             status,
+		Messages:           msgs,
+		Error:              errPtr,
+		PlanMode:           s.PlanMode,
+		PendingInteraction: pending,
 	}
 }
 

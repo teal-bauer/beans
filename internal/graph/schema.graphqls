@@ -373,6 +373,27 @@ type AgentSession {
   error: String
   "Whether the agent is in plan mode (read-only)"
   planMode: Boolean!
+  "Pending blocking interaction awaiting user response"
+  pendingInteraction: PendingInteraction
+}
+
+"""
+A blocking interaction the agent is waiting for user approval on
+"""
+type PendingInteraction {
+  "Type of interaction"
+  type: InteractionType!
+  "Plan file content (for EXIT_PLAN only)"
+  planContent: String
+}
+
+"""
+Type of blocking interaction
+"""
+enum InteractionType {
+  EXIT_PLAN
+  ENTER_PLAN
+  ASK_USER
 }
 
 """

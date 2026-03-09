@@ -57,12 +57,13 @@ type ComplexityRoot struct {
 	}
 
 	AgentSession struct {
-		AgentType func(childComplexity int) int
-		BeanID    func(childComplexity int) int
-		Error     func(childComplexity int) int
-		Messages  func(childComplexity int) int
-		PlanMode  func(childComplexity int) int
-		Status    func(childComplexity int) int
+		AgentType          func(childComplexity int) int
+		BeanID             func(childComplexity int) int
+		Error              func(childComplexity int) int
+		Messages           func(childComplexity int) int
+		PendingInteraction func(childComplexity int) int
+		PlanMode           func(childComplexity int) int
+		Status             func(childComplexity int) int
 	}
 
 	Bean struct {
@@ -108,6 +109,11 @@ type ComplexityRoot struct {
 		SetParent        func(childComplexity int, id string, parentID *string, ifMatch *string) int
 		StopAgent        func(childComplexity int, beanID string) int
 		UpdateBean       func(childComplexity int, id string, input model.UpdateBeanInput) int
+	}
+
+	PendingInteraction struct {
+		PlanContent func(childComplexity int) int
+		Type        func(childComplexity int) int
 	}
 
 	Query struct {
@@ -223,6 +229,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.AgentSession.Messages(childComplexity), true
+	case "AgentSession.pendingInteraction":
+		if e.complexity.AgentSession.PendingInteraction == nil {
+			break
+		}
+
+		return e.complexity.AgentSession.PendingInteraction(childComplexity), true
 	case "AgentSession.planMode":
 		if e.complexity.AgentSession.PlanMode == nil {
 			break
@@ -534,6 +546,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.UpdateBean(childComplexity, args["id"].(string), args["input"].(model.UpdateBeanInput)), true
+
+	case "PendingInteraction.planContent":
+		if e.complexity.PendingInteraction.PlanContent == nil {
+			break
+		}
+
+		return e.complexity.PendingInteraction.PlanContent(childComplexity), true
+	case "PendingInteraction.type":
+		if e.complexity.PendingInteraction.Type == nil {
+			break
+		}
+
+		return e.complexity.PendingInteraction.Type(childComplexity), true
 
 	case "Query.agentSession":
 		if e.complexity.Query.AgentSession == nil {
@@ -1367,6 +1392,41 @@ func (ec *executionContext) fieldContext_AgentSession_planMode(_ context.Context
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AgentSession_pendingInteraction(ctx context.Context, field graphql.CollectedField, obj *model.AgentSession) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AgentSession_pendingInteraction,
+		func(ctx context.Context) (any, error) {
+			return obj.PendingInteraction, nil
+		},
+		nil,
+		ec.marshalOPendingInteraction2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐPendingInteraction,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AgentSession_pendingInteraction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AgentSession",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "type":
+				return ec.fieldContext_PendingInteraction_type(ctx, field)
+			case "planContent":
+				return ec.fieldContext_PendingInteraction_planContent(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PendingInteraction", field.Name)
 		},
 	}
 	return fc, nil
@@ -3122,6 +3182,64 @@ func (ec *executionContext) fieldContext_Mutation_setAgentPlanMode(ctx context.C
 	return fc, nil
 }
 
+func (ec *executionContext) _PendingInteraction_type(ctx context.Context, field graphql.CollectedField, obj *model.PendingInteraction) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PendingInteraction_type,
+		func(ctx context.Context) (any, error) {
+			return obj.Type, nil
+		},
+		nil,
+		ec.marshalNInteractionType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐInteractionType,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_PendingInteraction_type(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PendingInteraction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type InteractionType does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PendingInteraction_planContent(ctx context.Context, field graphql.CollectedField, obj *model.PendingInteraction) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_PendingInteraction_planContent,
+		func(ctx context.Context) (any, error) {
+			return obj.PlanContent, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_PendingInteraction_planContent(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PendingInteraction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_bean(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3364,6 +3482,8 @@ func (ec *executionContext) fieldContext_Query_agentSession(ctx context.Context,
 				return ec.fieldContext_AgentSession_error(ctx, field)
 			case "planMode":
 				return ec.fieldContext_AgentSession_planMode(ctx, field)
+			case "pendingInteraction":
+				return ec.fieldContext_AgentSession_pendingInteraction(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AgentSession", field.Name)
 		},
@@ -3615,6 +3735,8 @@ func (ec *executionContext) fieldContext_Subscription_agentSessionChanged(ctx co
 				return ec.fieldContext_AgentSession_error(ctx, field)
 			case "planMode":
 				return ec.fieldContext_AgentSession_planMode(ctx, field)
+			case "pendingInteraction":
+				return ec.fieldContext_AgentSession_pendingInteraction(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type AgentSession", field.Name)
 		},
@@ -5770,6 +5892,8 @@ func (ec *executionContext) _AgentSession(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "pendingInteraction":
+			out.Values[i] = ec._AgentSession_pendingInteraction(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6291,6 +6415,47 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var pendingInteractionImplementors = []string{"PendingInteraction"}
+
+func (ec *executionContext) _PendingInteraction(ctx context.Context, sel ast.SelectionSet, obj *model.PendingInteraction) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pendingInteractionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PendingInteraction")
+		case "type":
+			out.Values[i] = ec._PendingInteraction_type(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "planContent":
+			out.Values[i] = ec._PendingInteraction_planContent(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7063,6 +7228,16 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNInteractionType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐInteractionType(ctx context.Context, v any) (model.InteractionType, error) {
+	var res model.InteractionType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInteractionType2githubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐInteractionType(ctx context.Context, sel ast.SelectionSet, v model.InteractionType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNReplaceOperation2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐReplaceOperation(ctx context.Context, v any) (*model.ReplaceOperation, error) {
 	res, err := ec.unmarshalInputReplaceOperation(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
@@ -7510,6 +7685,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	_ = ctx
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOPendingInteraction2ᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐPendingInteraction(ctx context.Context, sel ast.SelectionSet, v *model.PendingInteraction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._PendingInteraction(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOReplaceOperation2ᚕᚖgithubᚗcomᚋhmansᚋbeansᚋinternalᚋgraphᚋmodelᚐReplaceOperationᚄ(ctx context.Context, v any) ([]*model.ReplaceOperation, error) {

@@ -33,6 +33,8 @@ type AgentSession struct {
 	Error *string `json:"error,omitempty"`
 	// Whether the agent is in plan mode (read-only)
 	PlanMode bool `json:"planMode"`
+	// Pending blocking interaction awaiting user response
+	PendingInteraction *PendingInteraction `json:"pendingInteraction,omitempty"`
 }
 
 // Represents a change to a bean
@@ -136,6 +138,14 @@ type CreateBeanInput struct {
 }
 
 type Mutation struct {
+}
+
+// A blocking interaction the agent is waiting for user approval on
+type PendingInteraction struct {
+	// Type of interaction
+	Type InteractionType `json:"type"`
+	// Plan file content (for EXIT_PLAN only)
+	PlanContent *string `json:"planContent,omitempty"`
 }
 
 type Query struct {
@@ -375,6 +385,64 @@ func (e *ChangeType) UnmarshalJSON(b []byte) error {
 }
 
 func (e ChangeType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+// Type of blocking interaction
+type InteractionType string
+
+const (
+	InteractionTypeExitPlan  InteractionType = "EXIT_PLAN"
+	InteractionTypeEnterPlan InteractionType = "ENTER_PLAN"
+	InteractionTypeAskUser   InteractionType = "ASK_USER"
+)
+
+var AllInteractionType = []InteractionType{
+	InteractionTypeExitPlan,
+	InteractionTypeEnterPlan,
+	InteractionTypeAskUser,
+}
+
+func (e InteractionType) IsValid() bool {
+	switch e {
+	case InteractionTypeExitPlan, InteractionTypeEnterPlan, InteractionTypeAskUser:
+		return true
+	}
+	return false
+}
+
+func (e InteractionType) String() string {
+	return string(e)
+}
+
+func (e *InteractionType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = InteractionType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid InteractionType", str)
+	}
+	return nil
+}
+
+func (e InteractionType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *InteractionType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e InteractionType) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

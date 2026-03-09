@@ -7,6 +7,13 @@ export interface AgentMessage {
 	content: string;
 }
 
+export type InteractionType = 'EXIT_PLAN' | 'ENTER_PLAN' | 'ASK_USER';
+
+export interface PendingInteraction {
+	type: InteractionType;
+	planContent: string | null;
+}
+
 export interface AgentSession {
 	beanId: string;
 	agentType: string;
@@ -14,6 +21,7 @@ export interface AgentSession {
 	messages: AgentMessage[];
 	error: string | null;
 	planMode: boolean;
+	pendingInteraction: PendingInteraction | null;
 }
 
 const AGENT_SESSION_SUBSCRIPTION = gql`
@@ -28,6 +36,10 @@ const AGENT_SESSION_SUBSCRIPTION = gql`
 			}
 			error
 			planMode
+			pendingInteraction {
+				type
+				planContent
+			}
 		}
 	}
 `;

@@ -273,9 +273,9 @@ func TestSetPlanMode_TogglesExisting(t *testing.T) {
 	if !s.PlanMode {
 		t.Error("expected PlanMode to be true")
 	}
-	// SessionID should be cleared since mode changed and process would need respawning
-	if s.SessionID != "" {
-		t.Errorf("expected SessionID to be cleared, got %q", s.SessionID)
+	// SessionID should be preserved so --resume maintains conversation context
+	if s.SessionID != "sess-123" {
+		t.Errorf("expected SessionID to be preserved, got %q", s.SessionID)
 	}
 }
 
@@ -320,6 +320,188 @@ func TestSetPlanMode_IncludedInSnapshot(t *testing.T) {
 	snap := m.GetSession("test")
 	if !snap.PlanMode {
 		t.Error("expected PlanMode=true in snapshot")
+	}
+}
+
+func TestHandleBlockingTool_ExitPlan(t *testing.T) {
+	m := NewManager("")
+	ch := m.Subscribe("test")
+	defer m.Unsubscribe("test", ch)
+
+	m.sessions["test"] = &Session{
+		ID:        "test",
+		Status:    StatusRunning,
+		PlanMode:  true,
+		SessionID: "sess-123",
+	}
+
+	m.handleBlockingTool("test", &PendingInteraction{Type: InteractionExitPlan})
+
+	s := m.sessions["test"]
+	if s.PlanMode {
+		t.Error("expected PlanMode to be false after ExitPlanMode")
+	}
+	if s.SessionID != "sess-123" {
+		t.Errorf("expected SessionID to be preserved, got %q", s.SessionID)
+	}
+	if s.PendingInteraction == nil {
+		t.Fatal("expected PendingInteraction to be set")
+	}
+	if s.PendingInteraction.Type != InteractionExitPlan {
+		t.Errorf("expected InteractionExitPlan, got %q", s.PendingInteraction.Type)
+	}
+	if s.Status != StatusIdle {
+		t.Errorf("expected status idle, got %q", s.Status)
+	}
+
+	// Should have notified
+	select {
+	case <-ch:
+	default:
+		t.Error("expected notification")
+	}
+}
+
+func TestHandleBlockingTool_EnterPlan(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:        "test",
+		Status:    StatusRunning,
+		PlanMode:  false,
+		SessionID: "sess-456",
+	}
+
+	m.handleBlockingTool("test", &PendingInteraction{Type: InteractionEnterPlan})
+
+	s := m.sessions["test"]
+	if !s.PlanMode {
+		t.Error("expected PlanMode to be true after EnterPlanMode")
+	}
+	if s.SessionID != "sess-456" {
+		t.Errorf("expected SessionID to be preserved, got %q", s.SessionID)
+	}
+	if s.PendingInteraction == nil || s.PendingInteraction.Type != InteractionEnterPlan {
+		t.Error("expected InteractionEnterPlan pending interaction")
+	}
+}
+
+func TestSendMessage_ClearsPendingInteraction(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:        "test",
+		Status:    StatusIdle,
+		WorkDir:   "/tmp/test",
+		SessionID: "sess-123",
+		PendingInteraction: &PendingInteraction{
+			Type: InteractionExitPlan,
+		},
+	}
+
+	// SendMessage will try to spawn a process — that will fail because
+	// there's no claude binary in test. But we can check the session state
+	// was updated before the spawn.
+	_ = m.SendMessage("test", "/tmp/test", "proceed")
+
+	s := m.sessions["test"]
+	if s.PendingInteraction != nil {
+		t.Error("expected PendingInteraction to be cleared after SendMessage")
+	}
+}
+
+func TestHandleBlockingTool_AskUser(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:        "test",
+		Status:    StatusRunning,
+		PlanMode:  false,
+		SessionID: "sess-789",
+	}
+
+	m.handleBlockingTool("test", &PendingInteraction{Type: InteractionAskUser})
+
+	s := m.sessions["test"]
+	// Plan mode should not change for AskUser
+	if s.PlanMode {
+		t.Error("expected PlanMode to remain false for AskUser")
+	}
+	if s.SessionID != "sess-789" {
+		t.Errorf("expected SessionID to be preserved, got %q", s.SessionID)
+	}
+	if s.PendingInteraction == nil || s.PendingInteraction.Type != InteractionAskUser {
+		t.Error("expected InteractionAskUser pending interaction")
+	}
+	if s.Status != StatusIdle {
+		t.Errorf("expected status idle, got %q", s.Status)
+	}
+}
+
+func TestBlockingInteraction(t *testing.T) {
+	tests := []struct {
+		toolName string
+		expected *PendingInteraction
+	}{
+		{"ExitPlanMode", &PendingInteraction{Type: InteractionExitPlan}},
+		{"EnterPlanMode", &PendingInteraction{Type: InteractionEnterPlan}},
+		{"AskUserQuestion", &PendingInteraction{Type: InteractionAskUser}},
+		{"Read", nil},
+		{"Write", nil},
+		{"", nil},
+	}
+
+	for _, tt := range tests {
+		got := blockingInteraction(tt.toolName)
+		if tt.expected == nil && got != nil {
+			t.Errorf("blockingInteraction(%q) = %v, want nil", tt.toolName, got)
+		} else if tt.expected != nil && (got == nil || got.Type != tt.expected.Type) {
+			t.Errorf("blockingInteraction(%q) = %v, want %v", tt.toolName, got, tt.expected)
+		}
+	}
+}
+
+func TestFindPlanFilePath(t *testing.T) {
+	tests := []struct {
+		name        string
+		invocations []ToolInvocation
+		expected    string
+	}{
+		{
+			name: "finds plan file from Write invocation",
+			invocations: []ToolInvocation{
+				{Tool: "Read", Input: "/some/file.go"},
+				{Tool: "Write", Input: "/Users/test/.claude/plans/cool-plan.md"},
+				{Tool: "ExitPlanMode", Input: ""},
+			},
+			expected: "/Users/test/.claude/plans/cool-plan.md",
+		},
+		{
+			name: "ignores Write to non-plan paths",
+			invocations: []ToolInvocation{
+				{Tool: "Write", Input: "/tmp/some-file.md"},
+			},
+			expected: "",
+		},
+		{
+			name: "returns last plan file if multiple",
+			invocations: []ToolInvocation{
+				{Tool: "Write", Input: "/Users/test/.claude/plans/old-plan.md"},
+				{Tool: "Write", Input: "/Users/test/.claude/plans/new-plan.md"},
+			},
+			expected: "/Users/test/.claude/plans/new-plan.md",
+		},
+		{
+			name:        "returns empty for no invocations",
+			invocations: nil,
+			expected:    "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := findPlanFilePath(tt.invocations)
+			if got != tt.expected {
+				t.Errorf("findPlanFilePath() = %q, want %q", got, tt.expected)
+			}
+		})
 	}
 }
 

@@ -97,10 +97,12 @@ func (m *Manager) SendMessage(beanID, workDir, message string) error {
 		session.WorkDir = workDir
 	}
 
-	// Append user message
+	// Append user message and clear turn state
 	userMsg := Message{Role: RoleUser, Content: message}
 	session.Messages = append(session.Messages, userMsg)
 	session.Error = ""
+	session.PendingInteraction = nil
+	session.ToolInvocations = nil
 
 	// Persist user message
 	if m.store != nil {
@@ -211,8 +213,6 @@ func (m *Manager) SetPlanMode(beanID string, planMode bool) error {
 	}
 
 	session.PlanMode = planMode
-	// Clear session ID so next message spawns a fresh process with the new mode
-	session.SessionID = ""
 
 	proc, hasProc := m.processes[beanID]
 	if hasProc {

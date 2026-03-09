@@ -25,6 +25,29 @@ type Message struct {
 	Content string
 }
 
+// ToolInvocation records a tool call with its name and input summary.
+type ToolInvocation struct {
+	Tool  string
+	Input string // summary of tool input (e.g. file path, command)
+}
+
+// InteractionType identifies the kind of blocking interaction the agent is requesting.
+type InteractionType string
+
+const (
+	InteractionExitPlan  InteractionType = "exit_plan"
+	InteractionEnterPlan InteractionType = "enter_plan"
+	InteractionAskUser   InteractionType = "ask_user"
+)
+
+// PendingInteraction represents a blocking tool call that requires user input.
+// When set, the agent process has been killed and is waiting for the user to respond
+// before resuming with --resume.
+type PendingInteraction struct {
+	Type        InteractionType
+	PlanContent string // plan file content (for exit_plan only)
+}
+
 // Session represents an active or idle agent conversation for a worktree.
 type Session struct {
 	ID        string        // beanID — one session per worktree
@@ -36,6 +59,14 @@ type Session struct {
 	WorkDir   string // worktree filesystem path
 	PlanMode  bool   // when true, agent uses --permission-mode plan (read-only)
 
+	// ToolInvocations tracks structured tool calls in the current turn.
+	// Reset on each new user message. Used to find plan files, etc.
+	ToolInvocations []ToolInvocation
+
+	// PendingInteraction is set when the agent calls a blocking tool
+	// (ExitPlanMode, EnterPlanMode) and is waiting for user approval.
+	PendingInteraction *PendingInteraction
+
 	// streamingIdx tracks the message index currently being streamed to.
 	// This ensures deltas from an ongoing turn go to the correct assistant
 	// message even if user messages are interleaved mid-turn. -1 means
@@ -45,16 +76,17 @@ type Session struct {
 
 // snapshot returns a deep copy of the session for safe concurrent reads.
 func (s *Session) snapshot() Session {
-	msgs := make([]Message, len(s.Messages))
-	copy(msgs, s.Messages)
-	return Session{
-		ID:        s.ID,
-		AgentType: s.AgentType,
-		SessionID: s.SessionID,
-		Status:    s.Status,
-		Messages:  msgs,
-		Error:     s.Error,
-		WorkDir:   s.WorkDir,
-		PlanMode:  s.PlanMode,
+	snap := Session{
+		ID:                 s.ID,
+		AgentType:          s.AgentType,
+		SessionID:          s.SessionID,
+		Status:             s.Status,
+		Messages:           make([]Message, len(s.Messages)),
+		Error:              s.Error,
+		WorkDir:            s.WorkDir,
+		PlanMode:           s.PlanMode,
+		PendingInteraction: s.PendingInteraction,
 	}
+	copy(snap.Messages, s.Messages)
+	return snap
 }

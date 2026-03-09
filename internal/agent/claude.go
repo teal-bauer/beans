@@ -136,6 +136,7 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 	var toolInputBuf strings.Builder
 	var toolMsgIdx int = -1
 	var toolName string
+	var toolInvIdx int = -1 // index into session.ToolInvocations
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -178,6 +179,11 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 			}
 
 		case eventToolUse:
+			// Handle blocking tools that require user interaction
+			if interaction := blockingInteraction(ev.ToolName); interaction != nil {
+				m.handleBlockingTool(beanID, interaction)
+			}
+
 			// Tool use start — show tool name in the conversation.
 			// Persist & reset streamingIdx so subsequent text deltas create a
 			// new assistant message *after* this tool message, preserving
@@ -207,6 +213,9 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 				toolMsg := Message{Role: RoleTool, Content: ev.ToolName}
 				s.Messages = append(s.Messages, toolMsg)
 				toolMsgIdx = len(s.Messages) - 1
+				// Track structured tool invocation
+				s.ToolInvocations = append(s.ToolInvocations, ToolInvocation{Tool: ev.ToolName})
+				toolInvIdx = len(s.ToolInvocations) - 1
 				// Persist the tool message
 				if m.store != nil {
 					m.mu.Unlock()
@@ -231,6 +240,10 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 					m.mu.Lock()
 					if s, ok := m.sessions[beanID]; ok && toolMsgIdx < len(s.Messages) {
 						s.Messages[toolMsgIdx].Content = toolName + ": " + summary
+						// Update structured tool invocation input
+						if toolInvIdx >= 0 && toolInvIdx < len(s.ToolInvocations) {
+							s.ToolInvocations[toolInvIdx].Input = summary
+						}
 					}
 					m.mu.Unlock()
 					m.notify(beanID)
@@ -331,6 +344,79 @@ func (m *Manager) setError(beanID, errMsg string) {
 	}
 	m.mu.Unlock()
 	m.notify(beanID)
+}
+
+// blockingInteraction returns a PendingInteraction if the tool name is a blocking
+// tool that requires user approval, or nil for regular tools.
+func blockingInteraction(toolName string) *PendingInteraction {
+	switch toolName {
+	case "ExitPlanMode":
+		return &PendingInteraction{Type: InteractionExitPlan}
+	case "EnterPlanMode":
+		return &PendingInteraction{Type: InteractionEnterPlan}
+	case "AskUserQuestion":
+		return &PendingInteraction{Type: InteractionAskUser}
+	default:
+		return nil
+	}
+}
+
+// handleBlockingTool processes a blocking tool call by setting the pending
+// interaction, killing the process, and notifying subscribers. The session ID
+// is preserved so the conversation can be resumed with --resume.
+func (m *Manager) handleBlockingTool(beanID string, interaction *PendingInteraction) {
+	m.mu.Lock()
+	s, ok := m.sessions[beanID]
+	if !ok {
+		m.mu.Unlock()
+		return
+	}
+
+	// For ExitPlanMode, find and read the plan file from recent Write tool messages
+	if interaction.Type == InteractionExitPlan {
+		if path := findPlanFilePath(s.ToolInvocations); path != "" {
+			if content, err := os.ReadFile(path); err == nil {
+				interaction.PlanContent = string(content)
+			}
+		}
+	}
+
+	s.PendingInteraction = interaction
+	s.Status = StatusIdle
+
+	// Toggle plan mode for mode-switch interactions
+	switch interaction.Type {
+	case InteractionExitPlan:
+		s.PlanMode = false
+	case InteractionEnterPlan:
+		s.PlanMode = true
+	case InteractionAskUser:
+		// No mode change — just pause for user input
+	}
+
+	proc, hasProc := m.processes[beanID]
+	if hasProc {
+		delete(m.processes, beanID)
+	}
+	m.mu.Unlock()
+
+	if hasProc && proc != nil {
+		proc.kill()
+	}
+
+	m.notify(beanID)
+}
+
+// findPlanFilePath scans tool invocations for a Write to ~/.claude/plans/*.md
+// and returns the file path, or empty string if not found.
+func findPlanFilePath(invocations []ToolInvocation) string {
+	for i := len(invocations) - 1; i >= 0; i-- {
+		inv := invocations[i]
+		if inv.Tool == "Write" && strings.Contains(inv.Input, "/.claude/plans/") && strings.HasSuffix(inv.Input, ".md") {
+			return inv.Input
+		}
+	}
+	return ""
 }
 
 // buildClaudeArgs constructs the CLI arguments for spawning claude.

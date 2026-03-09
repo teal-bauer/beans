@@ -31,6 +31,36 @@
 	const isRunning = $derived(status === 'RUNNING');
 	const sessionError = $derived(store.session?.error ?? null);
 	const planMode = $derived(store.session?.planMode ?? false);
+	const pendingInteraction = $derived(store.session?.pendingInteraction ?? null);
+
+	// Render plan content as markdown when available
+	let renderedPlanContent = $state<string | null>(null);
+	$effect(() => {
+		const content = pendingInteraction?.planContent;
+		if (content) {
+			renderMarkdown(content).then((html) => {
+				renderedPlanContent = html;
+			});
+		} else {
+			renderedPlanContent = null;
+		}
+	});
+
+	function approveInteraction() {
+		if (!pendingInteraction) return;
+		store.sendMessage(beanId, 'yes, proceed');
+	}
+
+	function rejectInteraction() {
+		if (!pendingInteraction) return;
+		if (pendingInteraction.type === 'EXIT_PLAN') {
+			// Rejected exiting plan → go back to plan mode
+			store.setPlanMode(beanId, true);
+		} else {
+			// Rejected entering plan → go back to work mode
+			store.setPlanMode(beanId, false);
+		}
+	}
 
 	// Auto-scroll to bottom when messages change
 	$effect(() => {
@@ -149,6 +179,59 @@
 	{#if sessionError || store.error}
 		<div class="px-4 py-2 bg-danger/10 text-danger border-t border-danger/20">
 			{sessionError || store.error}
+		</div>
+	{/if}
+
+	<!-- Pending interaction approval -->
+	{#if pendingInteraction && pendingInteraction.type !== 'ASK_USER'}
+		<div class={[
+			'border-t p-3',
+			pendingInteraction.type === 'EXIT_PLAN'
+				? 'border-status-in-progress-text/20 bg-status-in-progress-bg/50'
+				: 'border-warning/20 bg-warning/5'
+		]}>
+			<p class="text-xs font-mono text-text-muted mb-2">
+				{#if pendingInteraction.type === 'EXIT_PLAN'}
+					Agent wants to leave plan mode and start working.
+				{:else}
+					Agent wants to enter plan mode to analyze before making changes.
+				{/if}
+			</p>
+
+			{#if renderedPlanContent}
+				<div class="mb-3 max-h-48 overflow-y-auto rounded border border-border bg-surface p-3">
+					<div class="agent-prose prose max-w-none text-text text-xs min-w-0">
+						{@html renderedPlanContent}
+					</div>
+				</div>
+			{/if}
+
+			<div class="flex gap-2">
+				<button
+					onclick={approveInteraction}
+					class={[
+						'rounded px-3 py-1 text-xs font-mono transition-colors',
+						pendingInteraction.type === 'EXIT_PLAN'
+							? 'bg-status-in-progress-text text-white hover:opacity-90'
+							: 'bg-warning text-white hover:opacity-90'
+					]}
+				>
+					Approve
+				</button>
+				<button
+					onclick={rejectInteraction}
+					class="rounded px-3 py-1 text-xs font-mono border border-border text-text-muted hover:bg-surface-alt transition-colors"
+				>
+					Reject
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Ask user interaction — highlight that agent is waiting for a reply -->
+	{#if pendingInteraction?.type === 'ASK_USER'}
+		<div class="border-t border-accent/30 bg-accent/5 px-3 py-2">
+			<p class="text-xs font-mono text-accent">Agent is waiting for your answer — type your reply below.</p>
 		</div>
 	{/if}
 
