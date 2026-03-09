@@ -7,6 +7,10 @@ watchexec = "latest"
 [hooks]
 postinstall = "npx corepack enable"
 
+[tasks.setup]
+description = "Set up the project (install all dependencies, generate code)"
+depends = ["deps", "codegen"]
+
 [tasks.deps]
 description = "Install all dependencies"
 run = { tasks = ["deps:backend", "deps:frontend"] }
