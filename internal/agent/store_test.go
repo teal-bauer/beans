@@ -142,6 +142,39 @@ func TestStoreSkipsMalformedLines(t *testing.T) {
 	}
 }
 
+func TestToolMessagePersistsWithSummary(t *testing.T) {
+	dir := t.TempDir()
+	s, err := newStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	beanID := "bean-tool"
+
+	// Simulate what readOutput now does: persist tool message with summary included
+	s.appendMessage(beanID, Message{Role: RoleUser, Content: "build the project"})
+	s.appendMessage(beanID, Message{Role: RoleAssistant, Content: "I'll build it."})
+	// Tool message persisted AFTER summary was extracted (deferred persistence)
+	s.appendMessage(beanID, Message{Role: RoleTool, Content: "Bash: Build beans binary"})
+	s.appendMessage(beanID, Message{Role: RoleTool, Content: "Glob: **/main.go"})
+	s.appendMessage(beanID, Message{Role: RoleAssistant, Content: "Done!"})
+
+	// Reload and verify summaries survive
+	msgs, _, err := s.load(beanID)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(msgs) != 5 {
+		t.Fatalf("expected 5 messages, got %d", len(msgs))
+	}
+	if msgs[2].Content != "Bash: Build beans binary" {
+		t.Errorf("tool msg[2] = %q, want %q", msgs[2].Content, "Bash: Build beans binary")
+	}
+	if msgs[3].Content != "Glob: **/main.go" {
+		t.Errorf("tool msg[3] = %q, want %q", msgs[3].Content, "Glob: **/main.go")
+	}
+}
+
 func TestManagerPersistence(t *testing.T) {
 	dir := t.TempDir()
 

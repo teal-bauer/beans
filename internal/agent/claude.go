@@ -166,11 +166,37 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 	// Increase buffer for long lines (1MB)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
 
-	// Track tool input accumulation for extracting summaries
+	// Track tool input accumulation for extracting summaries.
+	// Tool messages are persisted lazily: we wait until the summary is available
+	// (or the next event arrives) before writing to JSONL, so the persisted
+	// content includes the human-readable description (e.g. "Bash: Build binary").
 	var toolInputBuf strings.Builder
 	var toolMsgIdx int = -1
 	var toolName string
 	var toolInvIdx int = -1 // index into session.ToolInvocations
+	var pendingToolPersist bool // true when current tool msg hasn't been persisted yet
+
+	// flushToolMsg persists the current tool message to JSONL if one is pending.
+	// Called before persisting any other message or at end of stream.
+	flushToolMsg := func() {
+		if !pendingToolPersist || m.store == nil {
+			pendingToolPersist = false
+			return
+		}
+		pendingToolPersist = false
+		m.mu.RLock()
+		s, ok := m.sessions[beanID]
+		var msg Message
+		if ok && toolMsgIdx >= 0 && toolMsgIdx < len(s.Messages) {
+			msg = s.Messages[toolMsgIdx]
+		}
+		m.mu.RUnlock()
+		if msg.Role == RoleTool {
+			if err := m.store.appendMessage(beanID, msg); err != nil {
+				log.Printf("[agent:%s] failed to persist tool message: %v", beanID, err)
+			}
+		}
+	}
 
 	for scanner.Scan() {
 		line := scanner.Bytes()
@@ -182,6 +208,9 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 
 		switch ev.Type {
 		case eventAssistantMessage:
+			// Flush any pending tool message before the assistant message
+			flushToolMsg()
+
 			// Full assistant message — arrives after stream_event deltas.
 			// Only use the text as fallback if deltas didn't already build it,
 			// to avoid replacing streamed content with the same text (visual flash).
@@ -223,8 +252,11 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 				m.handleBlockingTool(beanID, interaction)
 			}
 
+			// Flush any previous pending tool message before starting a new one
+			flushToolMsg()
+
 			// Tool use start — show tool name in the conversation.
-			// Persist & reset streamingIdx so subsequent text deltas create a
+			// Reset streamingIdx so subsequent text deltas create a
 			// new assistant message *after* this tool message, preserving
 			// chronological order.
 			toolInputBuf.Reset()
@@ -255,18 +287,10 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 				// Track structured tool invocation
 				s.ToolInvocations = append(s.ToolInvocations, ToolInvocation{Tool: ev.ToolName})
 				toolInvIdx = len(s.ToolInvocations) - 1
-				// Persist the tool message
-				if m.store != nil {
-					m.mu.Unlock()
-					if err := m.store.appendMessage(beanID, toolMsg); err != nil {
-						log.Printf("[agent:%s] failed to persist tool message: %v", beanID, err)
-					}
-				} else {
-					m.mu.Unlock()
-				}
-			} else {
-				m.mu.Unlock()
+				// Don't persist yet — wait for tool input summary
+				pendingToolPersist = true
 			}
+			m.mu.Unlock()
 			m.notify(beanID)
 
 		case eventToolInputDelta:
@@ -290,6 +314,9 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 			}
 
 		case eventNewTextBlock:
+			// Flush any pending tool message before new text
+			flushToolMsg()
+
 			// New text content block starting — insert paragraph break if
 			// the current message already has content (e.g. after tool use).
 			m.mu.Lock()
@@ -307,11 +334,17 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 			}
 
 		case eventTextDelta:
+			// Flush any pending tool message before text starts
+			flushToolMsg()
+
 			// Streaming text delta (with --include-partial-messages)
 			m.appendAssistantText(beanID, ev.Text)
 			m.notify(beanID)
 
 		case eventResult:
+			// Flush any pending tool message before result
+			flushToolMsg()
+
 			if ev.SessionID != "" {
 				m.mu.Lock()
 				if s, ok := m.sessions[beanID]; ok {
@@ -347,9 +380,13 @@ func (m *Manager) readOutput(beanID string, stdout io.Reader) {
 			m.notify(beanID)
 
 		case eventError:
+			flushToolMsg()
 			m.setError(beanID, ev.Error)
 		}
 	}
+
+	// Flush any remaining pending tool message at end of stream
+	flushToolMsg()
 }
 
 // appendAssistantText appends text to the current streaming assistant message.
