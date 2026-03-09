@@ -26,18 +26,18 @@
 	}
 
 	const typeBorders: Record<string, string> = {
-		milestone: 'border-l-purple-400',
-		epic: 'border-l-indigo-400',
-		feature: 'border-l-cyan-400',
-		bug: 'border-l-red-400',
+		milestone: 'border-l-purple-400 dark:border-l-purple-500',
+		epic: 'border-l-indigo-400 dark:border-l-indigo-500',
+		feature: 'border-l-cyan-400 dark:border-l-cyan-500',
+		bug: 'border-l-red-400 dark:border-l-red-500',
 		task: 'border-l-surface-dim'
 	};
 
 	const typeColors: Record<string, string> = {
-		milestone: 'bg-purple-100 text-purple-700',
-		epic: 'bg-indigo-100 text-indigo-700',
-		feature: 'bg-cyan-100 text-cyan-700',
-		bug: 'bg-red-100 text-red-700',
+		milestone: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
+		epic: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
+		feature: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+		bug: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
 		task: 'bg-surface-dim text-text-muted'
 	};
 

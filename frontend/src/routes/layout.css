@@ -8,18 +8,72 @@ a,
 	cursor: pointer;
 }
 
-@theme {
-	--color-surface: #ffffff;
-	--color-surface-alt: #f8f9fb;
-	--color-surface-dim: #f1f3f5;
-	--color-border: #e2e5e9;
-	--color-text: #1a1d23;
-	--color-text-muted: #6b7280;
-	--color-text-faint: #9ca3af;
-	--color-accent: #4f6df5;
-	--color-accent-text: #ffffff;
-	--color-danger: #dc2626;
-	--color-warning: #d97706;
-	--color-success: #16a34a;
-	--color-info: #2563eb;
+/* ── Light palette (default) ─────────────────── */
+:root {
+	color-scheme: light dark;
+
+	--th-surface: #ffffff;
+	--th-surface-alt: #f8f9fb;
+	--th-surface-dim: #f1f3f5;
+	--th-border: #e2e5e9;
+	--th-text: #1a1d23;
+	--th-text-muted: #6b7280;
+	--th-text-faint: #9ca3af;
+	--th-accent: #4f6df5;
+	--th-accent-text: #ffffff;
+	--th-danger: #dc2626;
+	--th-warning: #d97706;
+	--th-success: #16a34a;
+	--th-info: #2563eb;
+
+	/* Markdown heading colors */
+	--th-md-h1: #1e3a5f;
+	--th-md-h2: #2d5a7b;
+	--th-md-h3: #4a7c6f;
+	--th-md-h456: #64748b;
+	--th-md-h1-border: #e2e8f0;
+	--th-md-code-bg: #f1f5f9;
+}
+
+/* ── Dark palette ────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--th-surface: #18181b;
+		--th-surface-alt: #1e1e22;
+		--th-surface-dim: #27272a;
+		--th-border: #3f3f46;
+		--th-text: #e4e4e7;
+		--th-text-muted: #a1a1aa;
+		--th-text-faint: #71717a;
+		--th-accent: #818cf8;
+		--th-accent-text: #ffffff;
+		--th-danger: #ef4444;
+		--th-warning: #f59e0b;
+		--th-success: #22c55e;
+		--th-info: #3b82f6;
+
+		--th-md-h1: #93c5fd;
+		--th-md-h2: #7dd3fc;
+		--th-md-h3: #6ee7b7;
+		--th-md-h456: #94a3b8;
+		--th-md-h1-border: #3f3f46;
+		--th-md-code-bg: #27272a;
+	}
+}
+
+/* ── Tailwind theme tokens (reference CSS vars) ── */
+@theme inline {
+	--color-surface: var(--th-surface);
+	--color-surface-alt: var(--th-surface-alt);
+	--color-surface-dim: var(--th-surface-dim);
+	--color-border: var(--th-border);
+	--color-text: var(--th-text);
+	--color-text-muted: var(--th-text-muted);
+	--color-text-faint: var(--th-text-faint);
+	--color-accent: var(--th-accent);
+	--color-accent-text: var(--th-accent-text);
+	--color-danger: var(--th-danger);
+	--color-warning: var(--th-warning);
+	--color-success: var(--th-success);
+	--color-info: var(--th-info);
 }

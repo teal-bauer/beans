@@ -29,18 +29,18 @@
 	};
 
 	const typeColors: Record<string, string> = {
-		milestone: 'bg-purple-100 text-purple-700',
-		epic: 'bg-indigo-100 text-indigo-700',
-		feature: 'bg-cyan-100 text-cyan-700',
-		bug: 'bg-red-100 text-red-700',
+		milestone: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300',
+		epic: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300',
+		feature: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-300',
+		bug: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300',
 		task: 'bg-surface-dim text-text-muted'
 	};
 
 	const typeBorders: Record<string, string> = {
-		milestone: 'border-l-purple-400',
-		epic: 'border-l-indigo-400',
-		feature: 'border-l-cyan-400',
-		bug: 'border-l-red-400',
+		milestone: 'border-l-purple-400 dark:border-l-purple-500',
+		epic: 'border-l-indigo-400 dark:border-l-indigo-500',
+		feature: 'border-l-cyan-400 dark:border-l-cyan-500',
+		bug: 'border-l-red-400 dark:border-l-red-500',
 		task: 'border-l-surface-dim'
 	};
 
@@ -317,8 +317,8 @@
 	.bean-body :global(h1) {
 		font-size: 1.25rem;
 		font-weight: 600;
-		color: #1e3a5f;
-		border-bottom: 1px solid #e2e8f0;
+		color: var(--th-md-h1);
+		border-bottom: 1px solid var(--th-md-h1-border);
 		padding-bottom: 0.25rem;
 		margin-top: 1.5rem;
 	}
@@ -326,14 +326,14 @@
 	.bean-body :global(h2) {
 		font-size: 1.1rem;
 		font-weight: 600;
-		color: #2d5a7b;
+		color: var(--th-md-h2);
 		margin-top: 1.25rem;
 	}
 
 	.bean-body :global(h3) {
 		font-size: 1rem;
 		font-weight: 600;
-		color: #4a7c6f;
+		color: var(--th-md-h3);
 		margin-top: 1rem;
 	}
 
@@ -342,7 +342,7 @@
 	.bean-body :global(h6) {
 		font-size: 0.9rem;
 		font-weight: 600;
-		color: #64748b;
+		color: var(--th-md-h456);
 		margin-top: 0.75rem;
 	}
 
@@ -382,7 +382,7 @@
 	}
 
 	.bean-body :global(code:not(pre code)) {
-		background-color: #f1f5f9;
+		background-color: var(--th-md-code-bg);
 		padding: 0.125rem 0.375rem;
 		border-radius: 0.25rem;
 		font-size: 0.875em;
