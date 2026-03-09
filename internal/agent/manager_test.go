@@ -528,6 +528,128 @@ func TestBuildClaudeArgs_NoPlanMode(t *testing.T) {
 	}
 }
 
+func TestSetYoloMode_CreatesSession(t *testing.T) {
+	m := NewManager("")
+
+	err := m.SetYoloMode("test", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := m.sessions["test"]
+	if s == nil {
+		t.Fatal("expected session to be created")
+	}
+	if !s.YoloMode {
+		t.Error("expected YoloMode to be true")
+	}
+	if s.Status != StatusIdle {
+		t.Errorf("status = %q, want %q", s.Status, StatusIdle)
+	}
+}
+
+func TestSetYoloMode_TogglesExisting(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:        "test",
+		Status:    StatusIdle,
+		YoloMode:  false,
+		SessionID: "sess-123",
+	}
+
+	err := m.SetYoloMode("test", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	s := m.sessions["test"]
+	if !s.YoloMode {
+		t.Error("expected YoloMode to be true")
+	}
+	if s.SessionID != "sess-123" {
+		t.Errorf("expected SessionID to be preserved, got %q", s.SessionID)
+	}
+}
+
+func TestSetYoloMode_NoopWhenSame(t *testing.T) {
+	m := NewManager("")
+	ch := m.Subscribe("test")
+	defer m.Unsubscribe("test", ch)
+
+	m.sessions["test"] = &Session{
+		ID:       "test",
+		Status:   StatusIdle,
+		YoloMode: true,
+	}
+
+	// Drain any existing notification
+	select {
+	case <-ch:
+	default:
+	}
+
+	err := m.SetYoloMode("test", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should NOT notify since nothing changed
+	select {
+	case <-ch:
+		t.Error("expected no notification for noop")
+	default:
+	}
+}
+
+func TestSetYoloMode_IncludedInSnapshot(t *testing.T) {
+	m := NewManager("")
+	m.sessions["test"] = &Session{
+		ID:       "test",
+		Status:   StatusIdle,
+		YoloMode: true,
+	}
+
+	snap := m.GetSession("test")
+	if !snap.YoloMode {
+		t.Error("expected YoloMode=true in snapshot")
+	}
+}
+
+func TestBuildClaudeArgs_YoloMode(t *testing.T) {
+	args := buildClaudeArgs(&Session{YoloMode: true})
+	found := false
+	for _, a := range args {
+		if a == "--dangerously-skip-permissions" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected --dangerously-skip-permissions in args, got %v", args)
+	}
+}
+
+func TestBuildClaudeArgs_YoloOverridesPlan(t *testing.T) {
+	// When both are set, YOLO takes precedence (no plan mode flag)
+	args := buildClaudeArgs(&Session{YoloMode: true, PlanMode: true})
+	foundYolo := false
+	foundPlan := false
+	for _, a := range args {
+		if a == "--dangerously-skip-permissions" {
+			foundYolo = true
+		}
+		if a == "--permission-mode" {
+			foundPlan = true
+		}
+	}
+	if !foundYolo {
+		t.Error("expected --dangerously-skip-permissions in args")
+	}
+	if foundPlan {
+		t.Error("unexpected --permission-mode when YoloMode is set")
+	}
+}
+
 func TestShutdown(t *testing.T) {
 	m := NewManager("")
 	// Just verify it doesn't panic with no processes

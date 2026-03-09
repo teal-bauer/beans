@@ -31,6 +31,15 @@
 	const isRunning = $derived(status === 'RUNNING');
 	const sessionError = $derived(store.session?.error ?? null);
 	const planMode = $derived(store.session?.planMode ?? false);
+	const yoloMode = $derived(store.session?.yoloMode ?? false);
+	const agentMode = $derived<'plan' | 'act' | 'yolo'>(
+		planMode ? 'plan' : yoloMode ? 'yolo' : 'act'
+	);
+
+	function setAgentMode(mode: 'plan' | 'act' | 'yolo') {
+		store.setPlanMode(beanId, mode === 'plan');
+		store.setYoloMode(beanId, mode === 'yolo');
+	}
 	const pendingInteraction = $derived(store.session?.pendingInteraction ?? null);
 
 	// Render plan content as markdown when available
@@ -279,28 +288,40 @@
 		<div class="flex items-center pt-2">
 			<div class={["flex", isRunning && 'opacity-50 pointer-events-none']}>
 				<button
-					onclick={() => store.setPlanMode(beanId, false)}
+					onclick={() => setAgentMode('plan')}
 					disabled={isRunning}
 					class={[
 						'btn-tab-sm rounded-l',
-						!planMode
-							? 'border-status-in-progress-text/30 bg-status-in-progress-bg text-status-in-progress-text'
-							: 'btn-tab-sm-inactive'
-					]}
-				>
-					Work
-				</button>
-				<button
-					onclick={() => store.setPlanMode(beanId, true)}
-					disabled={isRunning}
-					class={[
-						'btn-tab-sm rounded-r border-l-0',
-						planMode
+						agentMode === 'plan'
 							? 'border-warning/30 bg-warning/10 text-warning'
 							: 'btn-tab-sm-inactive'
 					]}
 				>
 					Plan
+				</button>
+				<button
+					onclick={() => setAgentMode('act')}
+					disabled={isRunning}
+					class={[
+						'btn-tab-sm border-l-0',
+						agentMode === 'act'
+							? 'border-status-in-progress-text/30 bg-status-in-progress-bg text-status-in-progress-text'
+							: 'btn-tab-sm-inactive'
+					]}
+				>
+					Act
+				</button>
+				<button
+					onclick={() => setAgentMode('yolo')}
+					disabled={isRunning}
+					class={[
+						'btn-tab-sm rounded-r border-l-0',
+						agentMode === 'yolo'
+							? 'border-danger/30 bg-danger/10 text-danger'
+							: 'btn-tab-sm-inactive'
+					]}
+				>
+					YOLO
 				</button>
 			</div>
 		</div>

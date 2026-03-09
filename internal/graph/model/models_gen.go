@@ -33,6 +33,8 @@ type AgentSession struct {
 	Error *string `json:"error,omitempty"`
 	// Whether the agent is in plan mode (read-only)
 	PlanMode bool `json:"planMode"`
+	// Whether the agent is in YOLO mode (fully autonomous, no permission prompts)
+	YoloMode bool `json:"yoloMode"`
 	// Pending blocking interaction awaiting user response
 	PendingInteraction *PendingInteraction `json:"pendingInteraction,omitempty"`
 }

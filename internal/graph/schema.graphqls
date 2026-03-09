@@ -139,6 +139,12 @@ type Mutation {
   permission mode is a startup flag.
   """
   setAgentPlanMode(beanId: ID!, planMode: Boolean!): Boolean!
+
+  """
+  Set YOLO mode for an agent session. YOLO mode makes the agent fully autonomous
+  (no permission prompts). Kills any running process since the flag requires respawning.
+  """
+  setAgentYoloMode(beanId: ID!, yoloMode: Boolean!): Boolean!
 }
 
 """
@@ -385,6 +391,8 @@ type AgentSession {
   error: String
   "Whether the agent is in plan mode (read-only)"
   planMode: Boolean!
+  "Whether the agent is in YOLO mode (fully autonomous, no permission prompts)"
+  yoloMode: Boolean!
   "Pending blocking interaction awaiting user response"
   pendingInteraction: PendingInteraction
 }

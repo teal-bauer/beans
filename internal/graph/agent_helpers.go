@@ -66,6 +66,7 @@ func agentSessionToModel(s *agent.Session) *model.AgentSession {
 		Messages:           msgs,
 		Error:              errPtr,
 		PlanMode:           s.PlanMode,
+		YoloMode:           s.YoloMode,
 		PendingInteraction: pending,
 	}
 }

@@ -21,6 +21,7 @@ export interface AgentSession {
 	messages: AgentMessage[];
 	error: string | null;
 	planMode: boolean;
+	yoloMode: boolean;
 	pendingInteraction: PendingInteraction | null;
 }
 
@@ -36,6 +37,7 @@ const AGENT_SESSION_SUBSCRIPTION = gql`
 			}
 			error
 			planMode
+			yoloMode
 			pendingInteraction {
 				type
 				planContent
@@ -59,6 +61,12 @@ const STOP_AGENT = gql`
 const SET_AGENT_PLAN_MODE = gql`
 	mutation SetAgentPlanMode($beanId: ID!, $planMode: Boolean!) {
 		setAgentPlanMode(beanId: $beanId, planMode: $planMode)
+	}
+`;
+
+const SET_AGENT_YOLO_MODE = gql`
+	mutation SetAgentYoloMode($beanId: ID!, $yoloMode: Boolean!) {
+		setAgentYoloMode(beanId: $beanId, yoloMode: $yoloMode)
 	}
 `;
 
@@ -140,6 +148,19 @@ export class AgentChatStore {
 	async setPlanMode(beanId: string, planMode: boolean): Promise<boolean> {
 		const result = await client
 			.mutation(SET_AGENT_PLAN_MODE, { beanId, planMode })
+			.toPromise();
+
+		if (result.error) {
+			this.error = result.error.message;
+			return false;
+		}
+
+		return true;
+	}
+
+	async setYoloMode(beanId: string, yoloMode: boolean): Promise<boolean> {
+		const result = await client
+			.mutation(SET_AGENT_YOLO_MODE, { beanId, yoloMode })
 			.toPromise();
 
 		if (result.error) {

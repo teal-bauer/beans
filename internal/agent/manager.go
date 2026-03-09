@@ -229,6 +229,47 @@ func (m *Manager) SetPlanMode(beanID string, planMode bool) error {
 	return nil
 }
 
+// SetYoloMode toggles YOLO mode for a session, killing any running process
+// since --dangerously-skip-permissions is a startup flag that requires respawning.
+func (m *Manager) SetYoloMode(beanID string, yoloMode bool) error {
+	m.mu.Lock()
+	session, hasSession := m.sessions[beanID]
+	if !hasSession {
+		session = &Session{
+			ID:           beanID,
+			AgentType:    "claude",
+			Status:       StatusIdle,
+			YoloMode:     yoloMode,
+			streamingIdx: -1,
+		}
+		m.sessions[beanID] = session
+		m.mu.Unlock()
+		m.notify(beanID)
+		return nil
+	}
+
+	if session.YoloMode == yoloMode {
+		m.mu.Unlock()
+		return nil
+	}
+
+	session.YoloMode = yoloMode
+
+	proc, hasProc := m.processes[beanID]
+	if hasProc {
+		delete(m.processes, beanID)
+		session.Status = StatusIdle
+	}
+	m.mu.Unlock()
+
+	if hasProc && proc != nil {
+		proc.kill()
+	}
+
+	m.notify(beanID)
+	return nil
+}
+
 // Shutdown kills all running processes. Call on server shutdown.
 func (m *Manager) Shutdown() {
 	m.mu.Lock()

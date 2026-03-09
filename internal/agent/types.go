@@ -58,6 +58,7 @@ type Session struct {
 	Error     string // last error message, if status == error
 	WorkDir   string // worktree filesystem path
 	PlanMode  bool   // when true, agent uses --permission-mode plan (read-only)
+	YoloMode  bool   // when true, agent uses --dangerously-skip-permissions (fully autonomous)
 
 	// ToolInvocations tracks structured tool calls in the current turn.
 	// Reset on each new user message. Used to find plan files, etc.
@@ -85,6 +86,7 @@ func (s *Session) snapshot() Session {
 		Error:              s.Error,
 		WorkDir:            s.WorkDir,
 		PlanMode:           s.PlanMode,
+		YoloMode:           s.YoloMode,
 		PendingInteraction: s.PendingInteraction,
 	}
 	copy(snap.Messages, s.Messages)
