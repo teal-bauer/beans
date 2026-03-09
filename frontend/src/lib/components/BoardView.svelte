@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { Bean } from '$lib/beans.svelte';
 	import { beansStore, sortBeans } from '$lib/beans.svelte';
-	import { worktreeStore } from '$lib/worktrees.svelte';
 	import { orderBetween } from '$lib/fractional';
+	import { typeBorders } from '$lib/styles';
 	import { gql } from 'urql';
 	import { client } from '$lib/graphqlClient';
+	import BeanCard from './BeanCard.svelte';
 
 	interface Props {
 		onSelect?: (bean: Bean) => void;
@@ -32,29 +33,6 @@
 		// sortBeans already handles order → priority → type → title sorting
 		return sortBeans(beansStore.all.filter((b) => b.status === status && b.status !== 'scrapped'));
 	}
-
-	const typeBorders: Record<string, string> = {
-		milestone: 'border-l-type-milestone-border',
-		epic: 'border-l-type-epic-border',
-		feature: 'border-l-type-feature-border',
-		bug: 'border-l-type-bug-border',
-		task: 'border-l-type-task-border'
-	};
-
-	const typeColors: Record<string, string> = {
-		milestone: 'bg-type-milestone-bg text-type-milestone-text',
-		epic: 'bg-type-epic-bg text-type-epic-text',
-		feature: 'bg-type-feature-bg text-type-feature-text',
-		bug: 'bg-type-bug-bg text-type-bug-text',
-		task: 'bg-type-task-bg text-type-task-text'
-	};
-
-	const priorityIndicators: Record<string, string> = {
-		critical: 'text-danger',
-		high: 'text-warning',
-		low: 'text-text-faint',
-		deferred: 'text-text-faint opacity-60'
-	};
 
 	// Drag and drop
 	let draggedBeanId = $state<string | null>(null);
@@ -219,8 +197,7 @@
 		<div class="flex w-[300px] min-w-[260px] shrink-0 flex-col" data-status={col.status}>
 			<!-- Column header -->
 			<div class="mb-3 flex items-center gap-2 px-1">
-				<span class={["rounded-full px-2 py-0.5 text-[11px] font-medium", col.color]}>{col.label}</span
-				>
+				<span class={["rounded-full px-2 py-0.5 text-[11px] font-medium", col.color]}>{col.label}</span>
 				<span class="text-xs text-text-faint">{beans.length}</span>
 			</div>
 
@@ -248,7 +225,7 @@
 
 					<div
 						class={[
-							"relative overflow-hidden rounded border border-l-5 border-border bg-surface shadow transition-all",
+							"overflow-hidden rounded border border-l-5 border-border bg-surface shadow transition-all",
 							typeBorders[bean.type] ?? "border-l-type-task-border",
 							draggedBeanId === bean.id ? "opacity-40" : "hover:shadow-md",
 							selectedId === bean.id && "bg-accent/5 ring-1 ring-accent"
@@ -259,30 +236,7 @@
 						ondragover={(e) => onCardDragOver(e, col.status, index)}
 						role="listitem"
 					>
-						{#if worktreeStore.hasWorktree(bean.id)}
-							<div class="absolute top-0 right-0 size-4 bg-success" style="clip-path: polygon(0 0, 100% 0, 100% 100%)"></div>
-						{/if}
-						<button class="w-full p-3 text-left" onclick={() => onSelect?.(bean)}>
-							<div class="flex min-w-0 items-start gap-2">
-								<span class="flex-1 text-sm leading-snug text-text">{bean.title}</span>
-								{#if bean.priority && bean.priority !== 'normal' && priorityIndicators[bean.priority]}
-									<span class={["shrink-0 text-xs", priorityIndicators[bean.priority]]}>
-										{bean.priority}
-									</span>
-								{/if}
-							</div>
-							<div class="mt-1 flex items-center gap-2">
-								<code class="text-[10px] text-text-faint">{bean.id.slice(-4)}</code>
-								<span
-									class={[
-										"rounded-full px-1.5 py-0.5 text-[10px] font-medium",
-										typeColors[bean.type] ?? "bg-type-task-bg text-type-task-text"
-									]}
-								>
-									{bean.type}
-								</span>
-							</div>
-						</button>
+						<BeanCard {bean} variant="board" onclick={() => onSelect?.(bean)} />
 					</div>
 				{:else}
 					<div class="text-center text-text-faint text-sm py-8">No beans</div>

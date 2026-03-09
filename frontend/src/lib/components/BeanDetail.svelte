@@ -4,6 +4,8 @@
 	import { worktreeStore } from '$lib/worktrees.svelte';
 	import { ui } from '$lib/uiState.svelte';
 	import { renderMarkdown } from '$lib/markdown';
+	import { statusColors, typeColors, priorityColors } from '$lib/styles';
+	import BeanCard from './BeanCard.svelte';
 	import ConfirmModal from './ConfirmModal.svelte';
 
 	interface Props {
@@ -20,38 +22,6 @@
 		bean.blockingIds.map((id) => beansStore.get(id)).filter((b): b is Bean => b !== undefined)
 	);
 	const blockedBy = $derived(beansStore.blockedBy(bean.id));
-
-	const statusColors: Record<string, string> = {
-		draft: 'bg-status-draft-bg text-status-draft-text',
-		todo: 'bg-status-todo-bg text-status-todo-text',
-		'in-progress': 'bg-status-in-progress-bg text-status-in-progress-text',
-		completed: 'bg-status-completed-bg text-status-completed-text',
-		scrapped: 'bg-status-scrapped-bg text-status-scrapped-text'
-	};
-
-	const typeColors: Record<string, string> = {
-		milestone: 'bg-type-milestone-bg text-type-milestone-text',
-		epic: 'bg-type-epic-bg text-type-epic-text',
-		feature: 'bg-type-feature-bg text-type-feature-text',
-		bug: 'bg-type-bug-bg text-type-bug-text',
-		task: 'bg-type-task-bg text-type-task-text'
-	};
-
-	const typeBorders: Record<string, string> = {
-		milestone: 'border-l-type-milestone-border',
-		epic: 'border-l-type-epic-border',
-		feature: 'border-l-type-feature-border',
-		bug: 'border-l-type-bug-border',
-		task: 'border-l-type-task-border'
-	};
-
-	const priorityColors: Record<string, string> = {
-		critical: 'border-danger text-danger',
-		high: 'border-warning text-warning',
-		normal: 'border-border text-text-muted',
-		low: 'border-border text-text-muted opacity-60',
-		deferred: 'border-border text-text-muted opacity-40'
-	};
 
 	let renderedBody = $state('');
 
@@ -113,26 +83,6 @@
 	}
 </script>
 
-{#snippet beanCard(b: Bean)}
-	<button
-		onclick={() => onSelect?.(b)}
-		class={[
-			"w-full text-left rounded-lg p-2 border-l-2 transition-all bg-surface hover:bg-surface-alt",
-			typeBorders[b.type] ?? "border-l-type-task-border"
-		]}
-	>
-		<div class="flex items-center gap-1.5 min-w-0">
-			<code class="text-[9px] text-text-faint shrink-0">{b.id.slice(-4)}</code>
-			<span class="text-xs text-text truncate flex-1">{b.title}</span>
-			<span class={[
-				"text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
-				statusColors[b.status] ?? "bg-status-todo-bg text-status-todo-text"
-			]}>
-				{b.status}
-			</span>
-		</div>
-	</button>
-{/snippet}
 
 <div class="h-full overflow-auto p-6">
 	<!-- Header -->
@@ -251,7 +201,7 @@
 			{#if parent}
 				<div>
 					<h2 class="text-xs font-semibold text-text-muted uppercase mb-1">Parent</h2>
-					{@render beanCard(parent)}
+					<BeanCard bean={parent} variant="compact" onclick={() => onSelect?.(parent)} />
 				</div>
 			{/if}
 
@@ -262,7 +212,7 @@
 					</h2>
 					<div class="space-y-0.5">
 						{#each children as child}
-							{@render beanCard(child)}
+							<BeanCard bean={child} variant="compact" onclick={() => onSelect?.(child)} />
 						{/each}
 					</div>
 				</div>
@@ -275,7 +225,7 @@
 					</h2>
 					<div class="space-y-0.5">
 						{#each blocking as b}
-							{@render beanCard(b)}
+							<BeanCard bean={b} variant="compact" onclick={() => onSelect?.(b)} />
 						{/each}
 					</div>
 				</div>
@@ -288,7 +238,7 @@
 					</h2>
 					<div class="space-y-0.5">
 						{#each blockedBy as b}
-							{@render beanCard(b)}
+							<BeanCard bean={b} variant="compact" onclick={() => onSelect?.(b)} />
 						{/each}
 					</div>
 				</div>
