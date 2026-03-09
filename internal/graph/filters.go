@@ -75,6 +75,12 @@ func ApplyFilter(beans []*bean.Bean, filter *model.BeanFilter, core *beancore.Co
 			result = filterByNotBlocked(result, core)
 		}
 	}
+	if filter.IsExplicitlyBlocked != nil && *filter.IsExplicitlyBlocked {
+		result = filterByIsExplicitlyBlocked(result, core)
+	}
+	if filter.IsImplicitlyBlocked != nil && *filter.IsImplicitlyBlocked {
+		result = filterByIsImplicitlyBlocked(result, core)
+	}
 
 	// Blocked-by filters (for direct blocked_by field)
 	if filter.HasBlockedBy != nil && *filter.HasBlockedBy {
@@ -85,6 +91,11 @@ func ApplyFilter(beans []*bean.Bean, filter *model.BeanFilter, core *beancore.Co
 	}
 	if filter.NoBlockedBy != nil && *filter.NoBlockedBy {
 		result = filterByNoBlockedBy(result)
+	}
+
+	// Implicit status filter
+	if filter.ExcludeImplicitTerminal != nil && *filter.ExcludeImplicitTerminal {
+		result = filterByNoImplicitTerminal(result, core)
 	}
 
 	return result
@@ -284,6 +295,28 @@ func filterByIsBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
 	return result
 }
 
+// filterByIsExplicitlyBlocked filters beans that have direct active blockers.
+func filterByIsExplicitlyBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if core.IsExplicitlyBlocked(b.ID) {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByIsImplicitlyBlocked filters beans where an ancestor is blocked.
+func filterByIsImplicitlyBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		if core.IsImplicitlyBlocked(b.ID) {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
 // filterByNotBlocked filters beans that are NOT blocked by others.
 // A bean is considered not blocked if it has no active (non-completed, non-scrapped) blockers.
 func filterByNotBlocked(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
@@ -326,6 +359,19 @@ func filterByNoBlockedBy(beans []*bean.Bean) []*bean.Bean {
 	var result []*bean.Bean
 	for _, b := range beans {
 		if len(b.BlockedBy) == 0 {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// filterByNoImplicitTerminal excludes beans that inherit a terminal status
+// (scrapped or completed) from an ancestor.
+func filterByNoImplicitTerminal(beans []*bean.Bean, core *beancore.Core) []*bean.Bean {
+	var result []*bean.Bean
+	for _, b := range beans {
+		status, _ := core.ImplicitStatus(b.ID)
+		if status == "" {
 			result = append(result, b)
 		}
 	}

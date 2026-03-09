@@ -67,26 +67,28 @@ type ComplexityRoot struct {
 	}
 
 	Bean struct {
-		BlockedBy    func(childComplexity int, filter *model.BeanFilter) int
-		BlockedByIds func(childComplexity int) int
-		Blocking     func(childComplexity int, filter *model.BeanFilter) int
-		BlockingIds  func(childComplexity int) int
-		Body         func(childComplexity int) int
-		Children     func(childComplexity int, filter *model.BeanFilter) int
-		CreatedAt    func(childComplexity int) int
-		ETag         func(childComplexity int) int
-		ID           func(childComplexity int) int
-		Order        func(childComplexity int) int
-		Parent       func(childComplexity int) int
-		ParentID     func(childComplexity int) int
-		Path         func(childComplexity int) int
-		Priority     func(childComplexity int) int
-		Slug         func(childComplexity int) int
-		Status       func(childComplexity int) int
-		Tags         func(childComplexity int) int
-		Title        func(childComplexity int) int
-		Type         func(childComplexity int) int
-		UpdatedAt    func(childComplexity int) int
+		BlockedBy          func(childComplexity int, filter *model.BeanFilter) int
+		BlockedByIds       func(childComplexity int) int
+		Blocking           func(childComplexity int, filter *model.BeanFilter) int
+		BlockingIds        func(childComplexity int) int
+		Body               func(childComplexity int) int
+		Children           func(childComplexity int, filter *model.BeanFilter) int
+		CreatedAt          func(childComplexity int) int
+		ETag               func(childComplexity int) int
+		ID                 func(childComplexity int) int
+		ImplicitStatus     func(childComplexity int) int
+		ImplicitStatusFrom func(childComplexity int) int
+		Order              func(childComplexity int) int
+		Parent             func(childComplexity int) int
+		ParentID           func(childComplexity int) int
+		Path               func(childComplexity int) int
+		Priority           func(childComplexity int) int
+		Slug               func(childComplexity int) int
+		Status             func(childComplexity int) int
+		Tags               func(childComplexity int) int
+		Title              func(childComplexity int) int
+		Type               func(childComplexity int) int
+		UpdatedAt          func(childComplexity int) int
 	}
 
 	BeanChangeEvent struct {
@@ -145,6 +147,8 @@ type BeanResolver interface {
 	Blocking(ctx context.Context, obj *bean.Bean, filter *model.BeanFilter) ([]*bean.Bean, error)
 	Parent(ctx context.Context, obj *bean.Bean) (*bean.Bean, error)
 	Children(ctx context.Context, obj *bean.Bean, filter *model.BeanFilter) ([]*bean.Bean, error)
+	ImplicitStatus(ctx context.Context, obj *bean.Bean) (*string, error)
+	ImplicitStatusFrom(ctx context.Context, obj *bean.Bean) (*string, error)
 }
 type MutationResolver interface {
 	CreateBean(ctx context.Context, input model.CreateBeanInput) (*bean.Bean, error)
@@ -317,6 +321,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Bean.ID(childComplexity), true
+	case "Bean.implicitStatus":
+		if e.complexity.Bean.ImplicitStatus == nil {
+			break
+		}
+
+		return e.complexity.Bean.ImplicitStatus(childComplexity), true
+	case "Bean.implicitStatusFrom":
+		if e.complexity.Bean.ImplicitStatusFrom == nil {
+			break
+		}
+
+		return e.complexity.Bean.ImplicitStatusFrom(childComplexity), true
 	case "Bean.order":
 		if e.complexity.Bean.Order == nil {
 			break
@@ -1961,6 +1977,10 @@ func (ec *executionContext) fieldContext_Bean_blockedBy(ctx context.Context, fie
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2044,6 +2064,10 @@ func (ec *executionContext) fieldContext_Bean_blocking(ctx context.Context, fiel
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2126,6 +2150,10 @@ func (ec *executionContext) fieldContext_Bean_parent(_ context.Context, field gr
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2198,6 +2226,10 @@ func (ec *executionContext) fieldContext_Bean_children(ctx context.Context, fiel
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2212,6 +2244,64 @@ func (ec *executionContext) fieldContext_Bean_children(ctx context.Context, fiel
 	if fc.Args, err = ec.field_Bean_children_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Bean_implicitStatus(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_implicitStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Bean().ImplicitStatus(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_implicitStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Bean_implicitStatusFrom(ctx context.Context, field graphql.CollectedField, obj *bean.Bean) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Bean_implicitStatusFrom,
+		func(ctx context.Context) (any, error) {
+			return ec.resolvers.Bean().ImplicitStatusFrom(ctx, obj)
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Bean_implicitStatusFrom(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Bean",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
 	}
 	return fc, nil
 }
@@ -2309,6 +2399,10 @@ func (ec *executionContext) fieldContext_BeanChangeEvent_bean(_ context.Context,
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2410,6 +2504,10 @@ func (ec *executionContext) fieldContext_Mutation_createBean(ctx context.Context
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2493,6 +2591,10 @@ func (ec *executionContext) fieldContext_Mutation_updateBean(ctx context.Context
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2617,6 +2719,10 @@ func (ec *executionContext) fieldContext_Mutation_setParent(ctx context.Context,
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2700,6 +2806,10 @@ func (ec *executionContext) fieldContext_Mutation_addBlocking(ctx context.Contex
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2783,6 +2893,10 @@ func (ec *executionContext) fieldContext_Mutation_removeBlocking(ctx context.Con
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2866,6 +2980,10 @@ func (ec *executionContext) fieldContext_Mutation_addBlockedBy(ctx context.Conte
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -2949,6 +3067,10 @@ func (ec *executionContext) fieldContext_Mutation_removeBlockedBy(ctx context.Co
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -3305,6 +3427,10 @@ func (ec *executionContext) fieldContext_Query_bean(ctx context.Context, field g
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -3388,6 +3514,10 @@ func (ec *executionContext) fieldContext_Query_beans(ctx context.Context, field 
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -3848,6 +3978,10 @@ func (ec *executionContext) fieldContext_Worktree_bean(_ context.Context, field 
 				return ec.fieldContext_Bean_parent(ctx, field)
 			case "children":
 				return ec.fieldContext_Bean_children(ctx, field)
+			case "implicitStatus":
+				return ec.fieldContext_Bean_implicitStatus(ctx, field)
+			case "implicitStatusFrom":
+				return ec.fieldContext_Bean_implicitStatusFrom(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Bean", field.Name)
 		},
@@ -5366,7 +5500,7 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"search", "status", "excludeStatus", "type", "excludeType", "priority", "excludePriority", "tags", "excludeTags", "hasParent", "parentId", "hasBlocking", "blockingId", "isBlocked", "hasBlockedBy", "blockedById", "noParent", "noBlocking", "noBlockedBy"}
+	fieldsInOrder := [...]string{"search", "status", "excludeStatus", "type", "excludeType", "priority", "excludePriority", "tags", "excludeTags", "hasParent", "parentId", "hasBlocking", "blockingId", "isBlocked", "isExplicitlyBlocked", "isImplicitlyBlocked", "hasBlockedBy", "blockedById", "noParent", "noBlocking", "noBlockedBy", "excludeImplicitTerminal"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -5471,6 +5605,20 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.IsBlocked = data
+		case "isExplicitlyBlocked":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isExplicitlyBlocked"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IsExplicitlyBlocked = data
+		case "isImplicitlyBlocked":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isImplicitlyBlocked"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.IsImplicitlyBlocked = data
 		case "hasBlockedBy":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hasBlockedBy"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
@@ -5506,6 +5654,13 @@ func (ec *executionContext) unmarshalInputBeanFilter(ctx context.Context, obj an
 				return it, err
 			}
 			it.NoBlockedBy = data
+		case "excludeImplicitTerminal":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("excludeImplicitTerminal"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExcludeImplicitTerminal = data
 		}
 	}
 
@@ -6213,6 +6368,72 @@ func (ec *executionContext) _Bean(ctx context.Context, sel ast.SelectionSet, obj
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "implicitStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Bean_implicitStatus(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "implicitStatusFrom":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Bean_implicitStatusFrom(ctx, field, obj)
 				return res
 			}
 

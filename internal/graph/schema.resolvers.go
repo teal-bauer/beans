@@ -107,6 +107,24 @@ func (r *beanResolver) Children(ctx context.Context, obj *bean.Bean, filter *mod
 	return filtered, nil
 }
 
+// ImplicitStatus is the resolver for the implicitStatus field.
+func (r *beanResolver) ImplicitStatus(ctx context.Context, obj *bean.Bean) (*string, error) {
+	status, _ := r.Core.ImplicitStatus(obj.ID)
+	if status == "" {
+		return nil, nil
+	}
+	return &status, nil
+}
+
+// ImplicitStatusFrom is the resolver for the implicitStatusFrom field.
+func (r *beanResolver) ImplicitStatusFrom(ctx context.Context, obj *bean.Bean) (*string, error) {
+	_, fromID := r.Core.ImplicitStatus(obj.ID)
+	if fromID == "" {
+		return nil, nil
+	}
+	return &fromID, nil
+}
+
 // CreateBean is the resolver for the createBean field.
 func (r *mutationResolver) CreateBean(ctx context.Context, input model.CreateBeanInput) (*bean.Bean, error) {
 	b := &bean.Bean{
