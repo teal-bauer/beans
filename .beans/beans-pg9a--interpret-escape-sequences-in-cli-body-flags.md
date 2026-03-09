@@ -1,11 +1,11 @@
 ---
 # beans-pg9a
 title: Interpret escape sequences in CLI body flags
-status: completed
+status: in-progress
 type: bug
 priority: normal
 created_at: 2026-03-09T12:19:01Z
-updated_at: 2026-03-09T12:21:38Z
+updated_at: 2026-03-09T14:06:12Z
 ---
 
 CLI body flags (--body-append, --body, --body-replace-old/new) pass literal \\n instead of real newlines when called by agents. Add unescapeBody() to interpret \\n, \\t, \\\\ sequences.
