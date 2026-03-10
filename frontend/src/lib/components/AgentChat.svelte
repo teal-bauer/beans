@@ -374,19 +374,21 @@
 			<button
 				onclick={send}
 				disabled={!inputText.trim()}
-				class="shrink-0 rounded px-3 py-2 text-sm font-mono
+				class="shrink-0 inline-flex items-center gap-1.5 rounded px-3 py-2 text-sm font-mono
 					bg-accent text-accent-text hover:bg-accent/90 transition-colors
 					disabled:opacity-50 disabled:cursor-not-allowed"
 			>
+				<span class="icon-[uil--message] size-4"></span>
 				Send
 			</button>
 
 			{#if isRunning}
 				<button
 					onclick={() => store.stop(beanId)}
-					class="shrink-0 rounded px-3 py-2 text-sm font-mono
+					class="shrink-0 inline-flex items-center gap-1.5 rounded px-3 py-2 text-sm font-mono
 						bg-danger text-white hover:bg-danger/90 transition-colors"
 				>
+					<span class="icon-[uil--stop-circle] size-4"></span>
 					Stop
 				</button>
 			{/if}
@@ -405,6 +407,7 @@
 							: 'btn-tab-sm-inactive'
 					]}
 				>
+					<span class="icon-[uil--eye] size-3"></span>
 					Plan
 				</button>
 				<button
@@ -417,6 +420,7 @@
 							: 'btn-tab-sm-inactive'
 					]}
 				>
+					<span class="icon-[uil--play] size-3"></span>
 					Act
 				</button>
 				<button
@@ -429,6 +433,7 @@
 							: 'btn-tab-sm-inactive'
 					]}
 				>
+					<span class="icon-[uil--bolt] size-3"></span>
 					YOLO
 				</button>
 			</div>
@@ -439,6 +444,7 @@
 					disabled={isRunning || messages.length === 0}
 					class="btn-tab-sm rounded-l btn-tab-sm-inactive"
 				>
+					<span class="icon-[uil--compress-arrows] size-3"></span>
 					Compact
 				</button>
 				<button
@@ -446,6 +452,7 @@
 					disabled={isRunning || messages.length === 0}
 					class="btn-tab-sm rounded-r border-l-0 btn-tab-sm-inactive"
 				>
+					<span class="icon-[uil--trash-alt] size-3"></span>
 					Clear
 				</button>
 			</div>

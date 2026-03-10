@@ -37,7 +37,7 @@ button:disabled {
 }
 
 .btn-tab-sm {
-	@apply h-6 border px-2 text-xs font-medium transition-colors;
+	@apply inline-flex items-center gap-1 h-6 border px-2 text-xs font-medium transition-colors;
 }
 
 .btn-tab-sm-inactive {
