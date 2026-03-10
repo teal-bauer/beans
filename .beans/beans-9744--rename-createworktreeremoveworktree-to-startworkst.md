@@ -5,7 +5,8 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-03-10T17:10:03Z
-updated_at: 2026-03-10T17:17:12Z
+updated_at: 2026-03-10T19:31:46Z
+order: w
 ---
 
 Refactor the worktree-related GraphQL mutations:

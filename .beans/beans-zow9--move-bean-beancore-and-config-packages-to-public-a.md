@@ -5,7 +5,8 @@ status: completed
 type: task
 priority: normal
 created_at: 2026-03-10T19:11:48Z
-updated_at: 2026-03-10T19:13:18Z
+updated_at: 2026-03-10T19:31:46Z
+order: "y"
 ---
 
 Move internal/bean, internal/beancore, and internal/config out of internal/ to make them importable by external Go applications. internal/search stays internal as it's only used privately by beancore.

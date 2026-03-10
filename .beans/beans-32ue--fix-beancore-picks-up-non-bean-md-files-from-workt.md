@@ -5,7 +5,8 @@ status: completed
 type: bug
 priority: normal
 created_at: 2026-03-10T17:22:54Z
-updated_at: 2026-03-10T17:32:05Z
+updated_at: 2026-03-10T19:31:46Z
+order: V
 ---
 
 loadFromDisk() and Watch() recursively walk the entire .beans/ directory, picking up .md files from worktrees/ and conversations/ subdirectories as bogus beans.

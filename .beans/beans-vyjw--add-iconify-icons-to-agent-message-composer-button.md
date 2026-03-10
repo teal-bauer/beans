@@ -5,7 +5,8 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-03-10T17:44:33Z
-updated_at: 2026-03-10T17:50:02Z
+updated_at: 2026-03-10T19:31:46Z
+order: k
 ---
 
 Add icons from the UIL library (via Iconify) to the action buttons below the agent message composer in the web UI.

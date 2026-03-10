@@ -1,11 +1,12 @@
 ---
 # beans-xfup
 title: Add project-level setting for default agent permission mode
-status: in-progress
+status: completed
 type: feature
 priority: normal
 created_at: 2026-03-10T12:21:17Z
-updated_at: 2026-03-10T16:42:30Z
+updated_at: 2026-03-10T19:31:46Z
+order: c
 ---
 
 Allow configuring the default permission mode (yolo/act/plan) for new agent sessions via a project-level setting (e.g. in .beans.yml). Currently hardcoded to yolo mode (see beans-ftqb). This would let teams choose their preferred default.

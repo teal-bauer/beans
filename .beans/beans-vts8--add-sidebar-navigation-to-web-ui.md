@@ -5,7 +5,8 @@ status: completed
 type: feature
 priority: normal
 created_at: 2026-03-10T18:56:08Z
-updated_at: 2026-03-10T19:04:11Z
+updated_at: 2026-03-10T19:31:46Z
+order: s
 ---
 
 Add a sidebar to the beans-serve web UI with:
