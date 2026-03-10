@@ -47,13 +47,13 @@
 
 <SplitPane
 	direction="horizontal"
-	side="start"
+	side="end"
 	persistKey="chat-width"
 	initialSize={420}
 	collapsed={!ui.showPlanningChat}
 >
 	{#snippet aside()}
-		<div class="flex h-full flex-col border-r border-border bg-surface">
+		<div class="flex h-full flex-col border-l border-border bg-surface">
 			<div class="toolbar">
 				<span class="text-sm font-medium text-text">Agent</span>
 				<div class="flex-1"></div>
@@ -78,31 +78,9 @@
 			{#snippet children()}
 				<div class="flex h-full flex-col">
 					<div class="toolbar bg-surface">
-						<button
-							onclick={() => ui.togglePlanningChat()}
-							class={[
-								'mr-3 flex h-8 w-8 items-center justify-center rounded transition-colors',
-								ui.showPlanningChat
-									? 'bg-accent text-accent-text'
-									: 'border border-border bg-surface text-text-muted hover:bg-surface-alt'
-							]}
-							title={ui.showPlanningChat ? 'Hide chat' : 'Show chat'}
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								viewBox="0 0 20 20"
-								fill="currentColor"
-								class="h-4 w-4"
-							>
-								<path
-									fill-rule="evenodd"
-									d="M10 3c-4.31 0-8 3.033-8 7 0 2.024.978 3.825 2.499 5.085a3.478 3.478 0 01-.522 1.756.75.75 0 00.584 1.143 5.976 5.976 0 003.936-1.108c.487.082.99.124 1.503.124 4.31 0 8-3.033 8-7s-3.69-7-8-7z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-						</button>
+						<button class="btn-primary" onclick={() => ui.openCreateForm()}>+ New Bean</button>
 
-						<div class="flex">
+						<div class="ml-3 flex">
 							<button
 								onclick={() => ui.setPlanningView('backlog')}
 								class={[
@@ -126,7 +104,29 @@
 							<FilterInput bind:this={filterInput} />
 						</div>
 						<div class="flex-1"></div>
-						<button class="btn-primary" onclick={() => ui.openCreateForm()}>+ New Bean</button>
+						<button
+							onclick={() => ui.togglePlanningChat()}
+							class={[
+								'ml-3 flex h-8 w-8 items-center justify-center rounded transition-colors',
+								ui.showPlanningChat
+									? 'bg-accent text-accent-text'
+									: 'border border-border bg-surface text-text-muted hover:bg-surface-alt'
+							]}
+							title={ui.showPlanningChat ? 'Hide chat' : 'Show chat'}
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+								class="h-4 w-4"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M10 3c-4.31 0-8 3.033-8 7 0 2.024.978 3.825 2.499 5.085a3.478 3.478 0 01-.522 1.756.75.75 0 00.584 1.143 5.976 5.976 0 003.936-1.108c.487.082.99.124 1.503.124 4.31 0 8-3.033 8-7s-3.69-7-8-7z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+						</button>
 					</div>
 
 					{#if ui.planningView === 'backlog'}

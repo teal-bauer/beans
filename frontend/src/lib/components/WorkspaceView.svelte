@@ -12,9 +12,9 @@
 	let { bean }: Props = $props();
 </script>
 
-<SplitPane direction="horizontal" side="start" persistKey="workspace-chat-width" initialSize={480}>
+<SplitPane direction="horizontal" side="end" persistKey="workspace-chat-width" initialSize={480}>
 	{#snippet aside()}
-		<div class="flex h-full flex-col border-r border-border bg-surface">
+		<div class="flex h-full flex-col border-l border-border bg-surface">
 			<div class="toolbar">
 				<span class="text-sm font-medium text-text">Agent</span>
 			</div>
