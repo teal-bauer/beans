@@ -243,6 +243,15 @@ export async function renderMarkdown(content: string): Promise<string> {
 	const md = new Marked();
 	md.use({ gfm: true, breaks: true });
 	md.use(beanLinkExtension());
+	md.use({
+		renderer: {
+			link({ href, title, tokens }) {
+				const text = this.parser.parseInline(tokens);
+				const titleAttr = title ? ` title="${title}"` : '';
+				return `<a href="${href}"${titleAttr} target="_blank" rel="noopener noreferrer">${text}</a>`;
+			}
+		}
+	});
 
 	const hl = await getHighlighter();
 	if (hl) {
